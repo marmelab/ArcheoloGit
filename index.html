@@ -1,99 +1,186 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<style>
 
-    body {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        margin: auto;
-        position: relative;
-        width: 960px;
-    }
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link type="text/css" rel="stylesheet" href="/assets/css/styles.css"/>
+        <style>
 
-    form {
-        position: absolute;
-        right: 10px;
-        top: 10px;
-    }
+            .chart {
+                display: block;
+                margin: auto;
+                margin-top: 40px;
+            }
 
-    .node {
-        border: solid 1px white;
-        font: 10px sans-serif;
-        line-height: 12px;
-        overflow: hidden;
-        position: absolute;
-        text-indent: 2px;
-    }
+            text {
+                font-size: 11px;
+            }
 
-</style>
-<form>
-    <label><input type="radio" name="mode" value="size" checked> Size</label>
-    <label><input type="radio" name="mode" value="count"> Count</label>
-</form>
-<script src="/bower_components/momentjs/min/moment.min.js"></script>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script>
+            rect {
+                fill: none;
+            }
 
-    var formattedDatas = {
-        name: 'map',
-        children: []
-    };
+        </style>
+    </head>
+    <body>
+        <div id="body"></div>
+        <div id="footer">
+            <form>
+                <select>
+                    <option value="size">Size</option>
+                    <option value="count">Count</option>
+                </select>
+            </form>
+        </div>
+        <script src="/bower_components/momentjs/min/moment.min.js"></script>
+        <script src="/bower_components/d3/d3.min.js"></script>
+        <script>
 
-    var margin = {top: 40, right: 10, bottom: 10, left: 10},
-            width = 960 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
-
-    var color = d3.scale.category20c();
-
-    var treemap = d3.layout.treemap()
-            .size([width, height])
-            .sticky(true)
-            .value(function(d) { return d.size; });
-
-    var div = d3.select("body").append("div")
-            .style("position", "relative")
-            .style("width", (width + margin.left + margin.right) + "px")
-            .style("height", (height + margin.top + margin.bottom) + "px")
-            .style("left", margin.left + "px")
-            .style("top", margin.top + "px");
-
-    d3.csv('/datas.csv', function(error, datas) {
-        datas.forEach(function(file) {
-            var fileData = {
-                name: file.filePath,
-                size: moment().diff(moment(file.date), 'days')  * file.nbCommits
+            var formattedDatas = {
+                name: '/',
+                children: []
             };
 
-           formattedDatas.children.push(fileData);
-        });
+            var margin = {top: 40, right: 10, bottom: 10, left: 10},
+                    width = 1280 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom,
+                    x = d3.scale.linear().range([0, width]),
+                    y = d3.scale.linear().range([0, height]),
+                    root,
+                    node,
+                    color = d3.scale.category20c();
 
-        var node = div.datum(formattedDatas).selectAll(".node")
-                .data(treemap.nodes)
-                .enter().append("div")
-                .attr("class", "node")
-                .call(position)
-                .style("background", function(d) { return d.children ? color(d.name) : null; })
-                .text(function(d) { return d.children ? null : d.name; });
+            var treemap = d3.layout.treemap()
+                    .round(false)
+                    .size([width, height])
+                    .sticky(true)
+                    .value(function(d) { return d.size; });
 
-        d3.selectAll("input").on("change", function change() {
-            var value = this.value === "count"
-                    ? function() { return 1; }
-                    : function(d) { return d.size; };
-
-            node
-                    .data(treemap.value(value).nodes)
-                    .transition()
-                    .duration(1500)
-                    .call(position);
-        });
+            var svg = d3.select("#body")
+                .append("div")
+                    .attr("class", "chart")
+                    .style("width", width + "px")
+                    .style("height", height + "px")
+                .append("svg:svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                .append("svg:g")
+                    .attr("transform", "translate(.5,.5)");
 
 
-    })
+            d3.csv('/datas.csv', function(error, datas) {
+                datas.forEach(function(file) {
+                    createPath(formattedDatas, 0, file);
+                });
 
-    function position() {
-        this.style("left", function(d) { return d.x + "px"; })
-                .style("top", function(d) { return d.y + "px"; })
-                .style("width", function(d) { return Math.max(0, d.dx - 1) + "px"; })
-                .style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
-    }
+                node = root = formattedDatas;
 
-</script>
+                var nodes = treemap.nodes(root).filter(function(d) { return !d.children; });
+
+                var cell = svg.selectAll("g")
+                        .data(nodes)
+                        .enter().append("svg:g")
+                        .attr("class", "cell")
+                        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+                        .on("click", function(d) { return zoom(node == d.parent ? root : d.parent); });
+
+                cell.append("svg:rect")
+                        .attr("width", function(d) { return d.dx - 1; })
+                        .attr("height", function(d) { return d.dy - 1; })
+                        .style("fill", function(d) {
+                            return color(d.parent.name);
+                        });
+
+                cell.append("svg:text")
+                        .attr("x", function(d) { return d.dx / 2; })
+                        .attr("y", function(d) { return d.dy / 2; })
+                        .attr("dy", ".35em")
+                        .attr("text-anchor", "middle")
+                        .text(function(d) { return d.name; })
+                        .style("opacity", function(d) { d.w = this.getComputedTextLength(); return d.dx > d.w ? 1 : 0; });
+
+                d3.select(window).on("click", function() { zoom(root); });
+
+                d3.select("select").on("change", function() {
+                    treemap.value(this.value == "size" ? size : count).nodes(root);
+                    zoom(node);
+                });
+
+
+            })
+
+            function createPath(cursor, level, file) {
+                var filePaths = file.filePath.split('/'),
+                        path = filePaths[level];
+
+                // If we are at the last level of the filepath, the file cannot already be in the formattedDatas
+                // so we push it and we return to handle the next file
+                if(level === filePaths.length - 1) {
+                    cursor.children.push({
+                        name: file.filePath,
+                        size: 109
+                    });
+                    return;
+                }
+
+                // We loop on the children to know if the element is already in the formattedDatas
+                // if so, we call this method on its children, with one more level in the filepath
+                for(var i in cursor.children) {
+                    if (!cursor.children.hasOwnProperty(i)) {
+                        continue;
+                    }
+                    var child = cursor.children[i];
+
+                    if(child.name === path) {
+                        return createPath(child, level + 1, file);
+                    }
+                };
+
+                // The element is not already in the formattedDatas
+                // we add it, and then call this method on its empty children, with one more level in the filepath
+                var child = {
+                    name: path,
+                    children: []
+                };
+
+                cursor.children.push(child)
+                createPath(child, level + 1, file);
+            }
+
+            function size(d) {
+                return d.size;
+            }
+
+            function count(d) {
+                return 1;
+            }
+
+            function zoom(d) {
+                var kx = width / d.dx, ky = height / d.dy;
+                x.domain([d.x, d.x + d.dx]);
+                y.domain([d.y, d.y + d.dy]);
+
+                var t = svg.selectAll("g.cell").transition()
+                        .duration(d3.event.altKey ? 7500 : 750)
+                        .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+                t.select("rect")
+                        .attr("width", function(d) { return kx * d.dx - 1; })
+                        .attr("height", function(d) { return ky * d.dy - 1; })
+
+                t.select("text")
+                        .attr("x", function(d) { return kx * d.dx / 2; })
+                        .attr("y", function(d) { return ky * d.dy / 2; })
+                        .style("opacity", function(d) { return kx * d.dx > d.w ? 1 : 0; });
+
+                node = d;
+                d3.event.stopPropagation();
+            }
+
+        </script>
+    </body>
+</html>
+
+
+
+
