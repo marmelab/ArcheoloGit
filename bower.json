@@ -1,0 +1,12 @@
+{
+  "name": "archeologit",
+  "version": "0.0.1",
+  "authors": [
+    "Daphné Popin <daphne.popin@gmail.com>"
+  ],
+  "description": "archeology on your git files",
+  "private": true,
+  "dependencies": {
+    "momentjs": "~2.6.0"
+  }
+}
