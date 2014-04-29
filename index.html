@@ -17,19 +17,27 @@
 
             rect {
                 fill: none;
+                cursor: default;
+            }
+
+            .label {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .background {
+                stroke: #ffffff;
             }
         </style>
     </head>
     <body>
         <div id="body"></div>
-        <div id="footer">
-            <form>
-                <select>
-                    <option value="size">Size</option>
-                    <option value="count">Count</option>
-                </select>
-            </form>
-        </div>
+        <did id="detail">
+            <p>
+                <span class="name"></span><br>
+                (<span class="commits"></span> commit(s), dernière modification il y a <span class="days"></span> jour(s)).
+            </p>
+        </did>
         <script src="/bower_components/momentjs/min/moment.min.js"></script>
         <script src="/bower_components/d3/d3.min.js"></script>
         <script>
@@ -39,6 +47,7 @@
              */
             var ramp = d3.scale.linear().domain([0,100]).range(["green","red"]);
             var olderUnchangedDays = 0;
+            var transitionDuration = 500;
 
             var formattedDatas = {
                 name: '/',
@@ -51,9 +60,7 @@
                     x = d3.scale.linear().range([0, width]),
                     y = d3.scale.linear().range([0, height]),
                     root,
-                    node,
-                    color = d3.scale.category20c();
-
+                    node;
             var treemap = d3.layout.treemap()
                     .round(false)
                     .size([width, height])
@@ -70,6 +77,37 @@
                     .attr("height", height)
                 .append("svg:g")
                     .attr("transform", "translate(.5,.5)");
+
+            var defs = svg.append("defs");
+
+            var filter = defs.append("svg:filter")
+                    .attr("id", "outerDropShadow")
+                    .attr("x", "-20%")
+                    .attr("y", "-20%")
+                    .attr("width", "140%")
+                    .attr("height", "140%");
+
+            filter.append("svg:feOffset")
+                    .attr("result", "offOut")
+                    .attr("in", "SourceGraphic")
+                    .attr("dx", "1")
+                    .attr("dy", "1");
+
+            filter.append("svg:feColorMatrix")
+                    .attr("result", "matrixOut")
+                    .attr("in", "offOut")
+                    .attr("type", "matrix")
+                    .attr("values", "1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 .5 0");
+
+            filter.append("svg:feGaussianBlur")
+                    .attr("result", "blurOut")
+                    .attr("in", "matrixOut")
+                    .attr("stdDeviation", "3");
+
+            filter.append("svg:feBlend")
+                    .attr("in", "SourceGraphic")
+                    .attr("in2", "blurOut")
+                    .attr("mode", "normal");
 
 
             /*
@@ -100,20 +138,40 @@
                     })
                     .on("click", function(d) {
                         return zoom(node == d.parent ? root : d.parent);
+                    })
+                    .on("mouseover", function(d) {
+                        this.parentNode.appendChild(this); // workaround for bringing elements to the front (ie z-index)
+                        d3.select(this)
+                            .attr("filter", "url(#outerDropShadow)")
+                            .select(".background")
+                            .style("stroke", "#000000");
+
+                        var detail = d3.select("#detail");
+                        detail.select('.name').text(d.filepath);
+                        detail.select('.commits').text(d.size);
+                        detail.select('.days').text(d.days);
+                        detail.style('display', 'block');
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this)
+                            .attr("filter", "")
+                            .select(".background")
+                            .style("stroke", "#FFFFFF");
+                        var detail = d3.select("#detail");
+                        detail.style('display', 'none');
                     });
 
                 cell.append("svg:rect")
                     .attr("width", function(d) {
-                        var width = d.dx - 1;
-                        return width > 0 ? width : 0;
+                        return Math.max(0.01, d.dx);
                     })
                     .attr("height", function(d) {
-                        var height = d.dy - 1;
-                        return height > 0 ? height : 0;
+                        return Math.max(0.01, d.dy);
                     })
                     .style("fill", function(d) {
                         return ramp((d.days * 100) / olderUnchangedDays);
-                    });
+                    })
+                    .classed("background", true);
 
                 cell.append("svg:text")
                     .attr("x", function(d) {
@@ -127,17 +185,12 @@
                     .text(function(d) {
                         return d.name;
                     })
-                    .style("opacity", function(d) {
+                    .style("display", function(d) {
                         d.w = this.getComputedTextLength();
-                        return d.dx > d.w ? 1 : 0;
+                        return d.dx > d.w ? 'block' : 'none';
                     });
 
                 d3.select(window).on("click", function() { zoom(root); });
-
-                d3.select("select").on("change", function() {
-                    treemap.value(this.value == "size" ? size : count).nodes(root);
-                    zoom(node);
-                });
             })
 
 
@@ -148,42 +201,47 @@
                 return d.size;
             }
 
-            function count(d) {
-                return 1;
-            }
-
             function zoom(d) {
-                var kx = width / d.dx, ky = height / d.dy;
+                this.treemap
+                        .nodes(d);
+
+                // moving the next two lines above treemap layout messes up padding of zoom result
+                var kx = width  / d.dx;
+                var ky = height / d.dy;
+                var level = d;
+
                 x.domain([d.x, d.x + d.dx]);
                 y.domain([d.y, d.y + d.dy]);
 
-                var t = svg.selectAll("g.cell").transition()
-                    .duration(d3.event.altKey ? 7500 : 750)
-                    .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+                var zoomTransition = svg.selectAll("g.cell").transition().duration(transitionDuration)
+                    .attr("transform", function(d) {
+                        return "translate(" + x(d.x) + "," + y(d.y) + ")";
+                    })
 
-                t.select("rect")
+
+                // update the width/height of the rects
+                zoomTransition.select("rect")
                     .attr("width", function(d) {
-                        var width = kx * d.dx - 1;
-                        return width > 0 ? width : 0;
+                        return Math.max(0.01, kx * d.dx);
                     })
                     .attr("height", function(d) {
-                        var height = ky * d.dy - 1;
-                        return height > 0 ? height : 0;
+                        return Math.max(0.01, ky * d.dy);
                     })
+                    .style("fill", function(d) {
+                        return ramp((d.days * 100) / olderUnchangedDays);
+                    })
+                ;
 
-                t.select("text")
-                    .attr("x", function(d) {
-                        return kx * d.dx / 2;
-                    })
-                    .attr("y", function(d) {
-                        return ky * d.dy / 2;
-                    })
-                    .style("opacity", function(d) {
-                        return kx * d.dx > d.w ? 1 : 0;
-                    });
+                zoomTransition.select("rect text").style("display", function(d) {
+                    d.w = this.getComputedTextLength();
+                    return d.dx > d.w ? 'block' : 'block';
+                });
 
                 node = d;
-                d3.event.stopPropagation();
+
+                if (d3.event) {
+                    d3.event.stopPropagation();
+                }
             }
 
             function createPath(cursor, level, file) {
@@ -194,9 +252,10 @@
                 // so we push it and we return to handle the next file
                 if(level === filePaths.length - 1) {
                     cursor.children.push({
-                        name: file.filePath,
+                        name: path,
+                        filepath: file.filePath,
                         days: moment().diff(moment(file.date), 'days'),
-                        size: file.nbCommits * 1000
+                        size: file.nbCommits
                     });
                     return;
                 }
@@ -227,7 +286,4 @@
         </script>
     </body>
 </html>
-
-
-
 
