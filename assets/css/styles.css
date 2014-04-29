@@ -1,0 +1,32 @@
+body {
+    overflow: hidden;
+    margin: 40px;
+    font-family: "Helvetica Neue", Helvetica;
+}
+#detail {
+    display: none;
+}
+
+.chart {
+    display: block;
+    margin: auto;
+    margin-top: 40px;
+}
+
+text {
+    font-size: 10px;
+}
+
+rect {
+    fill: none;
+    cursor: default;
+}
+
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.background {
+    stroke: #ffffff;
+}
