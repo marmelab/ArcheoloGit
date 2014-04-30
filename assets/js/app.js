@@ -370,9 +370,7 @@ d3.csv('/datas.csv', function(error, datas) {
     // Listener on return key
     d3.select("body").on("keydown", function(d) {
 
-        console.log(currentParent.name);
-
-        if(d3.event.keyCode !== BACK_KEY && currentLevel <= 1 && currentParent == null) {
+        if(d3.event.keyCode !== BACK_KEY || currentLevel <= 1 || typeof(currentParent) === 'undefined') {
             return;
         }
 
@@ -391,9 +389,8 @@ d3.csv('/datas.csv', function(error, datas) {
     d3.select("#return").on("click", function(e) {
 
         d3.event.preventDefault()
-        console.log(currentParent.name);
 
-        if(currentLevel <= 1 || currentParent == null) {
+        if(currentLevel <= 1 || typeof(currentParent) === 'undefined') {
             return;
         }
 
