@@ -1,5 +1,5 @@
 /*
- * initialize datas
+ * initialize global datas
  */
 var ramp = d3.scale.linear().domain([0,100]).range(["green","red"]),
     olderUnchangedDays = 0,
@@ -8,25 +8,19 @@ var ramp = d3.scale.linear().domain([0,100]).range(["green","red"]),
     currentParent = null,
     BACK_KEY = 37,
 
-    formattedDatas = {
-        name: '/',
-        children: []
-    },
-
-    margin = {top: 40, right: 10, bottom: 10, left: 10},
-    width = 1280 - margin.left - margin.right,
-    height = 800 - margin.top - margin.bottom,
+    margin = {top: 100, right: 100, bottom: 0, left: 100},
+    width = window.innerWidth - margin.left - margin.right,
+    height = window.innerHeight - margin.top - margin.bottom,
     x = d3.scale.linear().range([0, width]),
     y = d3.scale.linear().range([0, height]),
     root,
-    node,
 
     treemap = d3.layout.treemap()
         .round(false)
         .size([width, height])
         .sticky(true)
         .value(function(d) {
-            return d.size;
+            return d.commits;
         }),
 
     svg = d3.select("#body")
@@ -69,111 +63,64 @@ var ramp = d3.scale.linear().domain([0,100]).range(["green","red"]),
             .attr("mode", "normal");
 
 
-
-/*
- * Build treemap
+/**
+ * Initialize the tree map
+ *
+ * @param [Array] nodes
+ * @param [Boolean] display
  */
-d3.csv('/datas.csv', function(error, datas) {
-
-
-    // Create tree from csv datas
-    datas.forEach(function(file) {
-        createPath(formattedDatas, 0, file);
-
-        var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
-        if (nbOfUnchangedDays > olderUnchangedDays) {
-            olderUnchangedDays = nbOfUnchangedDays;
-        }
-    });
-
-    node = root = formattedDatas;
-
-    var nodes = treemap.nodes(root).filter(function(d) {
-        return d.level < currentLevel;
-    });
-
-    initTreeMap(nodes, true);
-
-    // Build level select list
-    for(var i=1; i<=totalLevels; i++) {
-        d3.select('#level select')
-            .append("option")
-            .attr("value", i)
-            .text(i);
-    }
-
-    // Listener on level select list
-    d3.select("select").on("change", function() {
-        currentLevel = 1;
-        var maxLevel = +this.value;
-
-        var nodes = treemap.nodes(root).filter(function(d) {
-            return d.level < maxLevel;
-        });
-
-        initTreeMap(nodes, true);
-    });
-
-    // Listener on return key
-    d3.select("body").on("keydown", function(d) {
-        if(d3.event.keyCode == BACK_KEY && currentLevel > 1 && currentParent !== null) {
-
-            initTreeMap(currentParent.children, true);
-            zoom(currentParent);
-
-            currentLevel--;
-            currentParent = currentParent.parent;
-        }
-    });
-})
-
-
-
-
-
 function initTreeMap(nodes, display) {
 
+    // Remove existing cells from csv element
     svg.selectAll("#chart g").remove();
 
+
+    // Create new cells
     var cell = svg.selectAll("#chart g").data(nodes).enter().append("svg:g")
-        .attr("class", "cell")
+        .attr("class", function(d) {
+            return typeof(d.class) !== 'undefined' ? "cell file" : "cell";
+        })
         .attr("transform", function(d) {
             return "translate(" + d.x + "," + d.y + ")";
-        })
-        .on("click", function(d) {
-
-            if(typeof(d.children) == 'undefined') {
-                return;
-            }
-
-            currentLevel = d.level + 2;
-            currentParent = d.parent;
-            initTreeMap(d.children, false);
-            zoom(d);
-        })
-        .on("mouseover", function(d) {
-            this.parentNode.appendChild(this); // workaround for bringing elements to the front (ie z-index)
-            d3.select(this)
-                .attr("filter", "url(#outerDropShadow)")
-                .select(".background")
-                .style("stroke", "#000000");
-
-            var detail = d3.select("#detail");
-            detail.select('.name').text(d.filepath);
-            detail.select('.commits').text(d.size);
-            detail.select('.days').text(d.days);
-            detail.style('display', 'block');
-        })
-        .on("mouseout", function() {
-            d3.select(this)
-                .attr("filter", "")
-                .select(".background")
-                .style("stroke", "#FFFFFF");
-            var detail = d3.select("#detail");
-            detail.style('display', 'none');
         });
 
 
+    // Add new listeners on cells
+    cell.on("click", function(d) {
+        if(typeof(d.children) == 'undefined') {
+            return;
+        }
+
+        currentLevel = d.level + 2;
+        currentParent = d.parent;
+        displayReturnButton(true);
+        initTreeMap(d.children, false);
+        zoom(d);
+    })
+    .on("mouseover", function(d) {
+        this.parentNode.appendChild(this); // workaround for bringing elements to the front (ie z-index)
+        d3.select(this)
+            .attr("filter", "url(#outerDropShadow)")
+            .select(".background")
+            .style("stroke", "#000000");
+
+        var detail = d3.select("#detail");
+        detail.select('.name').text(d.filepath);
+        detail.select('.commits').text(d.commits);
+        detail.select('.days').text(d.days);
+        detail.style('opacity', 1);
+    })
+    .on("mouseout", function() {
+        d3.select(this)
+            .attr("filter", "")
+            .select(".background")
+            .style("stroke", "#FFFFFF");
+        var detail = d3.select("#detail");
+        detail.style('opacity', 0);
+    });
+
+
+    // Add rect element to cells
     var rect = cell.append("svg:rect")
         .style("fill", function(d) {
             return ramp((d.days * 100) / olderUnchangedDays);
@@ -191,10 +138,12 @@ function initTreeMap(nodes, display) {
         ;
     }
 
+
+    // Add text elements to cells
     var text = cell.append("svg:text")
         .attr("text-anchor", "middle")
         .text(function(d) {
-            return d.filepath;                      // d.name
+            return d.filepath;
         })
         .style("display", function(d) {
             d.w = this.getComputedTextLength();
@@ -212,28 +161,34 @@ function initTreeMap(nodes, display) {
             .attr("dy", ".35em")
         ;
     }
-
-    return treemap;
 }
 
 
 /**
  *
- * @param d
- * @returns {*|number|Number|string|size|Rs.size}
+ * @param [Object] d
+ *
+ * @returns [Integer]
  */
-function size(d) {
-    return d.size;
+function commits(d) {
+    return d.commits;
 }
 
+/**
+ *
+ * @param [Object] d
+ *
+ * @returns [Boolean]
+ */
 function level(d) {
     return d.level < currentLevel;
 }
 
 
 /**
+ * Handle the transition to a given element of the root tree
  *
- * @param d
+ * @param [Object] d
  */
 function zoom(d) {
     var kx = width  / d.dx;
@@ -270,20 +225,24 @@ function zoom(d) {
             return d.dx > d.w ? 'block' : 'none';
         });
 
-    node = d;
-
     if (d3.event) {
         d3.event.stopPropagation();
     }
 }
 
 
+function displayReturnButton(mustDisplay) {
+    d3.select("#return").style("display", mustDisplay ? "block" : "none");
+}
+
 /**
+ * Build the root tree object
+ * (called recursively for each element fetched from the csv file)
  *
- * @param cursor
- * @param level
- * @param file
- * @returns {*}
+ * @param [Object]  cursor  element of the root tree
+ * @param [Integer] level   level of the element in the root tree (depth)
+ * @param [Object]  file    datas fetch from the csv file to build the root tree
+ * @returns [Object]
  */
 function createPath(cursor, level, file) {
     var filePaths = file.filePath.split('/'),
@@ -295,21 +254,23 @@ function createPath(cursor, level, file) {
     // so we push it and we return to handle the next file
     if(level === filePaths.length - 1) {
 
-        var days = moment().diff(moment(file.date), 'days');
+        var days = moment().diff(moment(file.date), 'days'),
+            commits = Number(file.commits);
 
         cursor.children.push({
             name: path,
             filepath: file.filePath,
             days: days,
-            size: file.nbCommits,
-            level: level
+            commits: commits,
+            level: level,
+            class: "file"
         });
 
         if(cursor.days < days) {
             cursor.days = days;
         }
 
-        return;
+        return {commits: commits, days: days};
     }
 
     // We loop on the children to know if the element is already in the formattedDatas
@@ -321,9 +282,13 @@ function createPath(cursor, level, file) {
         var child = cursor.children[i];
 
         if(child.name === path) {
-            return createPath(child, level + 1, file);
+            var childInfo = createPath(child, level + 1, file);
+            child.commits += childInfo.commits;
+            child.days = Math.max(childInfo.days, child.days);
+
+            return childInfo;
         }
-    };
+    }
 
     // The element is not already in the formattedDatas
     // we add it, and then call this method on its empty children, with one more level in the filepath
@@ -331,10 +296,106 @@ function createPath(cursor, level, file) {
         name: path,
         filepath: filePaths.slice(0, level + 1).join('/').concat('/'),
         level: level,
-        days:0,
+        days: 0,
+        commits: 0,
         children: []
     };
 
-    cursor.children.push(child)
-    createPath(child, level + 1, file);
+    cursor.children.push(child);
+    var childInfo = createPath(child, level + 1, file);
+
+    child.commits = childInfo.commits;
+    child.days = childInfo.days;
+    return childInfo;
 }
+
+
+/**
+ *
+ * Retrieve data
+ *
+ */
+
+d3.csv('/datas.csv', function(error, datas) {
+
+    var formattedDatas = {
+        name: '/',
+        children: []
+    };
+
+
+    // Create tree from csv datas
+    datas.forEach(function(file) {
+        createPath(formattedDatas, 0, file);
+
+        var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
+        if (nbOfUnchangedDays > olderUnchangedDays) {
+            olderUnchangedDays = nbOfUnchangedDays;
+        }
+    });
+
+
+    // Init tree map
+    root = formattedDatas;
+    var nodes = treemap.nodes(root).filter(function(d) {
+        return d.level < totalLevels;
+    });
+    initTreeMap(nodes, true);
+
+
+    // Build level select list
+    for(var i=1; i<=totalLevels; i++) {
+        d3.select('form select')
+            .append("option")
+            .attr("value", i)
+            .text(i);
+    }
+    d3.select('form option[value="'+totalLevels+'"]').attr("selected", "selected");
+    currentLevel = totalLevels;
+
+
+    // Listener on level select list
+    d3.select("select").on("change", function() {
+        currentLevel = 1;
+        var maxLevel = +this.value;
+
+        var nodes = treemap.nodes(root).filter(function(d) {
+            return d.level < maxLevel;
+        });
+
+        initTreeMap(nodes, true);
+        displayReturnButton(false);
+    });
+
+    // Listener on return key
+    d3.select("body").on("keydown", function(d) {
+        if(d3.event.keyCode == BACK_KEY && currentLevel > 1 && currentParent !== null) {
+
+            initTreeMap(currentParent.children, true);
+            zoom(currentParent);
+
+            currentLevel--;
+            currentParent = currentParent.parent;
+
+            if(currentLevel == 1) {
+                displayReturnButton(false);
+            }
+        }
+    });
+
+    // Listener on return button
+    d3.select("#return").on("click", function(d) {
+        if(currentLevel > 1 && currentParent !== null) {
+
+            initTreeMap(currentParent.children, true);
+            zoom(currentParent);
+
+            currentLevel--;
+            currentParent = currentParent.parent;
+
+            if(currentLevel == 1) {
+                displayReturnButton(false);
+            }
+        }
+    });
+})

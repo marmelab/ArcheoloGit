@@ -3,7 +3,7 @@
 CSVFILE=`pwd`
 CSVFILE+='/datas.csv'
 
-echo 'date,nbCommits,filePath' > $CSVFILE
+echo 'date,commits,filePath' > $CSVFILE
 
 if [ $# = 1 ]
 then
