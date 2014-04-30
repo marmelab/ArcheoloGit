@@ -369,33 +369,43 @@ d3.csv('/datas.csv', function(error, datas) {
 
     // Listener on return key
     d3.select("body").on("keydown", function(d) {
-        if(d3.event.keyCode == BACK_KEY && currentLevel > 1 && currentParent !== null) {
 
-            initTreeMap(currentParent.children, true);
-            zoom(currentParent);
+        console.log(currentParent.name);
 
-            currentLevel--;
-            currentParent = currentParent.parent;
+        if(d3.event.keyCode !== BACK_KEY && currentLevel <= 1 && currentParent == null) {
+            return;
+        }
 
-            if(currentLevel == 1) {
-                displayReturnButton(false);
-            }
+        initTreeMap(currentParent.children, true);
+        zoom(currentParent);
+
+        currentLevel--;
+        currentParent = currentParent.parent;
+
+        if(currentLevel == 1) {
+            displayReturnButton(false);
         }
     });
 
     // Listener on return button
-    d3.select("#return").on("click", function(d) {
-        if(currentLevel > 1 && currentParent !== null) {
+    d3.select("#return").on("click", function(e) {
 
-            initTreeMap(currentParent.children, true);
-            zoom(currentParent);
+        d3.event.preventDefault()
+        console.log(currentParent.name);
 
-            currentLevel--;
-            currentParent = currentParent.parent;
-
-            if(currentLevel == 1) {
-                displayReturnButton(false);
-            }
+        if(currentLevel <= 1 || currentParent == null) {
+            return;
         }
+
+        initTreeMap(currentParent.children, true);
+        zoom(currentParent);
+
+        currentLevel--;
+        currentParent = currentParent.parent;
+
+        if(currentLevel == 1) {
+            displayReturnButton(false);
+        }
+
     });
 })
