@@ -34,11 +34,6 @@ form select {
     float: left;
 }
 
-#return {
-    float: left;
-    display: none;
-}
-
 .chart {
     display: block;
     margin: auto;

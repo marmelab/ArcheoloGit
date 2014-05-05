@@ -218,11 +218,6 @@
         }
     }
 
-    function displayReturnButton(mustDisplay) {
-        d3.select("#return")
-            .style("display", mustDisplay ? "block" : "none");
-    }
-
     /**
      * Build the root tree object
      * (called recursively for each element fetched from the csv file)
@@ -333,7 +328,6 @@
         });
 
         initTreeMap(nodes, true);
-        displayReturnButton(false);
 
         d3.select("select")[0][0].value = desiredLevel;
     }
@@ -346,7 +340,6 @@
     function changeParent(element) {
         currentLevel = element.level + 2;
         currentParent = element.parent;
-        displayReturnButton(true);
         initTreeMap(element.children, false);
 
         zoom(element);
@@ -451,26 +444,6 @@
             var desiredLevel = +this.value;
             History.pushState({level: desiredLevel}, "Set level" + desiredLevel, "?level=" + desiredLevel);
             changeLevel(desiredLevel);
-        });
-
-        // Listener on return button
-        d3.select("#return").on("click", function() {
-            d3.event.preventDefault();
-
-            if(currentLevel <= 1 || typeof(currentParent) === 'undefined') {
-                return;
-            }
-
-            initTreeMap(currentParent.children, true);
-            zoom(currentParent);
-
-            currentLevel--;
-            currentParent = currentParent.parent;
-
-            if(currentLevel == 1) {
-                displayReturnButton(false);
-            }
-
         });
     })
 })(window);
