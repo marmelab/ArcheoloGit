@@ -1,0 +1,69 @@
+body {
+    margin: 10px 100px 0;
+    overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica;
+}
+.wrapper {
+    width: 100%;
+}
+#detail {
+    opacity: 0;
+    left: 100px;
+}
+
+#detail .infos {
+    color: #777777;
+}
+
+#detail .commits, #detail .days {
+    font-weight: 700;
+}
+
+form {
+    float: left;
+    width: 200px;
+    height: 30px;
+}
+
+form label {
+    float: left;
+    padding: 2px 5px 0 0;
+}
+
+form select {
+    float: left;
+}
+
+#return {
+    float: left;
+    display: none;
+}
+
+.chart {
+    display: block;
+    margin: auto;
+}
+.cell rect {
+    cursor:pointer;
+}
+.cell.file rect {
+    cursor:default;
+}
+text {
+    font-size: 10px;
+    cursor: default;
+}
+
+rect {
+    fill: none;
+    cursor: default;
+}
+
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.background {
+    stroke: #ffffff;
+}
