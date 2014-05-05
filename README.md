@@ -24,7 +24,7 @@ Where should you focus the maintenance efforts? ArcheoloGit is a visualization o
 
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
 
-![angular.js ArcheoloGit]()
+![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
 
 # Usage
 
