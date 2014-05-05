@@ -7,20 +7,28 @@ Where should you focus the maintenance efforts? ArcheoloGit is a visualization o
 
 * clone the project
 
+```sh
     git clone git@github.com:marmelab/ArcheoloGit.git
     cd ArcheoloGit
+```
 
 * run the `run.sh` script with the path of the project you want to analyze as argument.
 
-    ./run.sh /path/to/project
+```sh
+./run.sh /path/to/project
+```
 
 * install server dependencies using Bower
 
-    bower install
+```sh
+bower install
+```
 
 * run a simple local server on the root, for instance with SimpleHttpServer:
 
-    python -m SimpleHTTPServer .
+```sh
+python -m SimpleHTTPServer .
+```
 
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
 
@@ -39,4 +47,5 @@ Therefore:
 
 You can see the details of a file by hovering the mouse.
 
-If there is too many elements and the graph is not usable, you can change the max depth and then browse the file tree. To go inside a folder, simply click on it. To go back to its parent, click on the `Back` button or press the left direction key.
+If there is too many elements and the graph is not usable, you can change the max depth and then browse the file tree.
+To go inside a folder, simply click on it. To go back to its parent or to the previous view, use the browser's back button.
