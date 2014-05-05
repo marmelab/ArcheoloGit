@@ -8,6 +8,7 @@
   "private": true,
   "dependencies": {
     "momentjs": "~2.6.0",
-    "d3": "~3.4.6"
+    "d3": "~3.4.6",
+    "history.js": "~1.8.0"
   }
 }
