@@ -5,6 +5,15 @@ Where should you focus the maintenance efforts? ArcheoloGit is a visualization o
 
 ![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
 
+ArcheoloGit displays all the files of the project as a rectangle. The size of each rectangle is proportional to the number of commits, the color is green if the file was recently modified, red if it hasn't been modified for a long time.
+
+Therefore:
+
+1. Large red rectangles show files modified often, but untouched for a long time. These are the files you should dig in first for refactoring.
+2. Small red rectangles show files seldom modified, and untouched for a long time. These files require your attention, because they could contain hidden bombs.
+3. Small green rectangles show files seldom modified, but created or modified recently. They won't need refactoring for now.
+4. Large green rectangles show files modified a lot of times, including recently. They probably don't deserve maintenance attention.
+
 # Installation
 
 * clone the project
@@ -35,15 +44,6 @@ python -m SimpleHTTPServer .
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
 
 # Usage
-
-ArcheoloGit displays all the files of the project as a rectangle. The size of each rectangle is proportional to the number of commits, the color is green if the file was recently modified, red if it hasn't been modified for a long time.
-
-Therefore:
-
-1. Large red rectangles show files modified often, but untouched for a long time. These are the files you should dig in first for refactoring.
-2. Small red rectangles show files seldom modified, and untouched for a long time. These files require your attention, because they could contain hidden bombs.
-3. Small green rectangles show files seldom modified, but created or modified recently. They won't need refactoring for now.
-4. Large green rectangles show files modified a lot of times, including recently. They probably don't deserve maintenance attention.
 
 You can see the details of a file by hovering the mouse.
 
