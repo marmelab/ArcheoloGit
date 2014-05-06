@@ -5,7 +5,7 @@ Where should you focus the maintenance efforts? ArcheoloGit is a visualization o
 
 ![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
 
-ArcheoloGit displays all the files of the project as a rectangle. The size of each rectangle is proportional to the number of commits, the color is green if the file was recently modified, red if it hasn't been modified for a long time.
+ArcheoloGit displays all files of a given application as rectangles. The size of each rectangle is proportional to the number of commits, the color is green if the file was recently modified, red if it hasn't been modified for a long time.
 
 Therefore:
 
