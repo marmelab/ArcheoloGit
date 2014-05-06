@@ -3,6 +3,8 @@ ArcheoloGit
 
 Where should you focus the maintenance efforts? ArcheoloGit is a visualization of age and dev activity for software, powered by d3.js.
 
+![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
+
 # Installation
 
 * clone the project
@@ -31,8 +33,6 @@ python -m SimpleHTTPServer .
 ```
 
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
-
-![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
 
 # Usage
 
