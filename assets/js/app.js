@@ -17,7 +17,7 @@ d3.chart.archeologit = function(options) {
         y = d3.scale.linear().range([0,  height]),
         treemap,
         svg,
-        globalg,
+        graphContainer,
         root = {name: '/', children: []};
 
 
@@ -39,7 +39,7 @@ d3.chart.archeologit = function(options) {
             .attr("width",  width)
             .attr("height",  height),
 
-        globalg = svg.append("svg:g")
+        graphContainer = svg.append("svg:g")
             .attr("transform", "translate(.5,.5)")
             .attr("id", "chart");
 
@@ -69,7 +69,7 @@ d3.chart.archeologit = function(options) {
                 .attr("in2", "blurOut")
                 .attr("mode", "normal");
 
-        stateChangeListener();
+        startStateChangeListener();
 
         // Create tree from datas
         selection.each(function(data) {
@@ -137,10 +137,10 @@ d3.chart.archeologit = function(options) {
      */
     function initTreeMap(nodes, display) {
         // Remove existing cells from csv element
-        globalg.selectAll("g").remove();
+        graphContainer.selectAll("g").remove();
 
         // Create new cells
-        var cell = globalg
+        var cell = graphContainer
             .selectAll("g").data(nodes).enter()
             .append("svg:g")
             .attr("class", function(d) {
@@ -426,7 +426,7 @@ d3.chart.archeologit = function(options) {
     /**
      * Bind to StateChange Event
      */
-    function stateChangeListener() {
+    function startStateChangeListener() {
         History.Adapter.bind(window,'statechange', function(){
             var state = History.getState(),
                 stateData = state.data;
