@@ -228,7 +228,7 @@ d3.chart.archeologit = function(options) {
 
 
     /**
-     *
+     * Return the number of commits of a given element of the tree
      * @param {Object} cell
      *
      * @returns {Number}
@@ -361,6 +361,7 @@ d3.chart.archeologit = function(options) {
 
 
     /**
+     * Return an element, from a filePath & a level
      *
      * @param cursor
      * @param level
@@ -391,7 +392,7 @@ d3.chart.archeologit = function(options) {
 
 
     /**
-     * Updates the map to a desired level
+     * Updates the chart to a desired depth level
      *
      * @param {Number} desiredLevel
      */
@@ -409,7 +410,7 @@ d3.chart.archeologit = function(options) {
 
 
     /**
-     * Updates the char with the given element
+     * Updates the chart with the given element as root
      *
      * @param {Object} element
      */
