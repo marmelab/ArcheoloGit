@@ -3,8 +3,10 @@ d3.chart = d3.chart || {};
 
 d3.chart.archeologit = function() {
 
-    var width = 800,
-        height = 600,
+    var width,
+        height,
+        x,
+        y,
         olderUnchangedDays = 0,
         totalLevels = 1,
         currentLevel = 1,
@@ -13,8 +15,6 @@ d3.chart.archeologit = function() {
         currentStep = History.getState(),
         historyState = History.getState(),
         colorRange = d3.scale.linear().domain([0,100]).range(["green","red"]),
-        x = d3.scale.linear().range([0, width]),
-        y = d3.scale.linear().range([0,  height]),
         treemap,
         svg,
         graphContainer,
@@ -68,6 +68,9 @@ d3.chart.archeologit = function() {
                 .attr("in", "SourceGraphic")
                 .attr("in2", "blurOut")
                 .attr("mode", "normal");
+
+        x = d3.scale.linear().range([0, width]),
+        y = d3.scale.linear().range([0,  height])
 
         startStateChangeListener();
 
@@ -262,30 +265,30 @@ d3.chart.archeologit = function() {
         var transition = svg.selectAll("g.cell").transition()
             .duration(750)
             .attr("transform", function(d) {
-                return "translate(" + x(cell.x) + "," + y(cell.y) + ")";
+                return "translate(" + x(d.x) + "," + y(d.y) + ")";
             });
 
         transition.select("rect")
             .attr("width", function(d) {
-                return Math.max(0.01, kx * cell.dx);
+                return Math.max(0.01, kx * d.dx);
             })
             .attr("height", function(d) {
-                return Math.max(0.01, ky * cell.dy);
+                return Math.max(0.01, ky * d.dy);
             })
             .style("fill", function(d) {
-                return colorRange((cell.days * 100) / olderUnchangedDays);
+                return colorRange((d.days * 100) / olderUnchangedDays);
             });
 
         transition.select("text")
             .attr("x", function(d) {
-                return kx * cell.dx / 2;
+                return kx * d.dx / 2;
             })
             .attr("y", function(d) {
-                return ky * cell.dy / 2;
+                return ky * d.dy / 2;
             })
             .style("display", function(d) {
-                cell.w = this.getComputedTextLength();
-                return cell.dx > cell.w ? 'block' : 'none';
+                d.w = this.getComputedTextLength();
+                return d.dx > d.w ? 'block' : 'none';
             });
 
         if (d3.event) {
