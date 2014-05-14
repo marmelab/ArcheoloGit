@@ -1,10 +1,10 @@
 d3.chart = d3.chart || {};
 
 
-d3.chart.archeologit = function(options) {
+d3.chart.archeologit = function() {
 
-    var width = options.width,
-        height = options.height,
+    var width = 800,
+        height = 600,
         olderUnchangedDays = 0,
         totalLevels = 1,
         currentLevel = 1,
@@ -71,17 +71,8 @@ d3.chart.archeologit = function(options) {
 
         startStateChangeListener();
 
-        // Create tree from datas
-        selection.each(function(data) {
-            data.forEach(function(file) {
-                createPath(root, 0, file);
+        createTree(selection);
 
-                var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
-                if (nbOfUnchangedDays > olderUnchangedDays) {
-                    olderUnchangedDays = nbOfUnchangedDays;
-                }
-            })
-        });
 
         // Init tree map
         var nodes = treemap.nodes(root).filter(function(d) {
@@ -125,6 +116,24 @@ d3.chart.archeologit = function(options) {
             var desiredLevel = +this.value;
             History.pushState({level: desiredLevel}, "Set level" + desiredLevel, "?level=" + desiredLevel);
             changeLevel(desiredLevel);
+        });
+    }
+
+    /**
+     * Create the tree, with data object = data from the csv file
+     *
+     * @param selection
+     */
+    function createTree(selection) {
+        selection.each(function(data) {
+            data.forEach(function(file) {
+                createPath(root, 0, file);
+
+                var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
+                if (nbOfUnchangedDays > olderUnchangedDays) {
+                    olderUnchangedDays = nbOfUnchangedDays;
+                }
+            })
         });
     }
 

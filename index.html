@@ -19,14 +19,11 @@
         <script src="/bower_components/history.js/scripts/bundled/html5/native.history.js"></script>
         <script src="/bower_components/momentjs/min/moment.min.js"></script>
         <script src="/bower_components/d3/d3.min.js"></script>
-        <script src="/assets/js/app.js"></script>
+        <script src="/assets/js/d3.archeologit.js"></script>
         <script type="text/javascript">
-            var options = {
-                width: window.innerWidth - 200,
-                height: window.innerHeight - 100
-            };
-
-            var chart = d3.chart.archeologit(options);
+            var chart = d3.chart.archeologit()
+                .width(window.innerWidth - 200)
+                .height(window.innerHeight - 100);
 
             d3.csv('/datas.csv', function(error, datas) {
                 d3.select('#body')
