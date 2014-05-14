@@ -1,83 +1,156 @@
-(function(window, undefined){
+d3.chart = d3.chart || {};
 
-    /*
-     * initialize global data
-     */
-    var ramp = d3.scale.linear().domain([0,100]).range(["green","red"]),
+
+d3.chart.archeologit = function() {
+
+    var width = 800,
+        height = 600,
         olderUnchangedDays = 0,
         totalLevels = 1,
         currentLevel = 1,
         firstLevel = 1,
-        currentParent = null,
-        prevStep =  null,
+        currentParent = prevStep = null,
         currentStep = History.getState(),
-
-        margin = {top: 100, right: 100, bottom: 0, left: 100},
-        width = window.innerWidth - margin.left - margin.right,
-        height = window.innerHeight - margin.top - margin.bottom,
+        historyState = History.getState(),
+        colorRange = d3.scale.linear().domain([0,100]).range(["green","red"]),
         x = d3.scale.linear().range([0, width]),
-        y = d3.scale.linear().range([0, height]),
-        root,
+        y = d3.scale.linear().range([0,  height]),
+        treemap,
+        svg,
+        graphContainer,
+        root = {name: '/', children: []};
+
+
+
+    function chart(selection){
 
         treemap = d3.layout.treemap()
             .round(false)
             .size([width, height])
             .sticky(true)
-            .value(getCommits),
+            .value(getCommits);
 
-        svg = d3.select("#body")
+        svg = this
             .append("div")
             .attr("class", "chart")
-            .style("width", width + "px")
-            .style("height", height + "px")
+            .style("width",  width + "px")
+            .style("height",  height + "px")
             .append("svg:svg")
-            .attr("width", width)
-            .attr("height", height)
-            .append("svg:g")
+            .attr("width",  width)
+            .attr("height",  height),
+
+        graphContainer = svg.append("svg:g")
             .attr("transform", "translate(.5,.5)")
             .attr("id", "chart");
 
-    filter = svg
-        .append("defs")
-        .append("svg:filter")
-        .attr("id", "outerDropShadow")
-        .attr("x", "-20%")
-        .attr("y", "-20%")
-        .attr("width", "140%")
-        .attr("height", "140%")
-        .append("svg:feOffset")
-        .attr("result", "offOut")
-        .attr("in", "SourceGraphic")
-        .attr("dx", "1")
-        .attr("dy", "1")
-        .append("svg:feColorMatrix")
-        .attr("result", "matrixOut")
-        .attr("in", "offOut")
-        .attr("type", "matrix")
-        .attr("values", "1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 .5 0")
-        .append("svg:feGaussianBlur")
-        .attr("result", "blurOut")
-        .attr("in", "matrixOut")
-        .attr("stdDeviation", "3")
-        .append("svg:feBlend")
-        .attr("in", "SourceGraphic")
-        .attr("in2", "blurOut")
-        .attr("mode", "normal");
+        svg.append("defs")
+            .append("svg:filter")
+                .attr("id", "outerDropShadow")
+                .attr("x", "-20%")
+                .attr("y", "-20%")
+                .attr("width", "140%")
+                .attr("height", "140%")
+            .append("svg:feOffset")
+                .attr("result", "offOut")
+                .attr("in", "SourceGraphic")
+                .attr("dx", "1")
+                .attr("dy", "1")
+            .append("svg:feColorMatrix")
+                .attr("result", "matrixOut")
+                .attr("in", "offOut")
+                .attr("type", "matrix")
+                .attr("values", "1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 .5 0")
+            .append("svg:feGaussianBlur")
+                .attr("result", "blurOut")
+                .attr("in", "matrixOut")
+                .attr("stdDeviation", "3")
+            .append("svg:feBlend")
+                .attr("in", "SourceGraphic")
+                .attr("in2", "blurOut")
+                .attr("mode", "normal");
+
+        startStateChangeListener();
+
+        createTree(selection);
+
+
+        // Init tree map
+        var nodes = treemap.nodes(root).filter(function(d) {
+            return d.level < totalLevels;
+        });
+        initTreeMap(nodes, true);
+
+        // Build level select list
+        for (var i = 1; i <= totalLevels; i++) {
+            d3.select('form select')
+                .append("option")
+                .attr("value", i)
+                .text(i);
+        }
+        d3.select('form option[value="' + totalLevels + '"]').attr("selected", "selected");
+        currentLevel = totalLevels;
+        firstLevel = totalLevels;
+
+        // Check if the level or the parent is in the URL
+        if (typeof(historyState.hash) !== 'undefined') {
+            var levelRegexp = new RegExp("level=([0-9]+)"),
+                levelInfos = levelRegexp.exec(historyState.hash),
+                parentRegexp = new RegExp("parent=([aA-zZ/]+)"),
+                parentInfos = parentRegexp.exec(historyState.hash);
+
+            if (levelInfos && levelInfos.length && levelInfos[1] > 0) {
+                firstLevel = +levelInfos[1];
+                changeLevel(firstLevel);
+            }
+
+            if (parentInfos && parentInfos.length) {
+                var parent = getElementFromPath(root, 0, parentInfos[1]);
+                if (parent) {
+                    changeParent(parent);
+                }
+            }
+        }
+
+        // Listener on level select list
+        d3.select("select").on("change", function() {
+            var desiredLevel = +this.value;
+            History.pushState({level: desiredLevel}, "Set level" + desiredLevel, "?level=" + desiredLevel);
+            changeLevel(desiredLevel);
+        });
+    }
+
+    /**
+     * Create the tree, with data object = data from the csv file
+     *
+     * @param selection
+     */
+    function createTree(selection) {
+        selection.each(function(data) {
+            data.forEach(function(file) {
+                createPath(root, 0, file);
+
+                var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
+                if (nbOfUnchangedDays > olderUnchangedDays) {
+                    olderUnchangedDays = nbOfUnchangedDays;
+                }
+            })
+        });
+    }
 
 
     /**
      * Initialize the tree map
      *
-     * @param {Array} nodes
-     * @param {Boolean} display
+     * @param {Array} nodes      list of all nodes
+     * @param {Boolean} display  display the treemap (false if we use the animation with the zoom function)
      */
     function initTreeMap(nodes, display) {
         // Remove existing cells from csv element
-        svg.selectAll("#chart g").remove();
+        graphContainer.selectAll("g").remove();
 
         // Create new cells
-        var cell = svg
-            .selectAll("#chart g").data(nodes).enter()
+        var cell = graphContainer
+            .selectAll("g").data(nodes).enter()
             .append("svg:g")
             .attr("class", function(d) {
                 return typeof(d.class) !== 'undefined' ? "cell file" : "cell";
@@ -123,7 +196,7 @@
         // Add rect element to cells
         var rect = cell.append("svg:rect")
             .style("fill", function(d) {
-                return ramp((d.days * 100) / olderUnchangedDays);
+                return colorRange((d.days * 100) / olderUnchangedDays);
             })
             .classed("background", true);
 
@@ -162,55 +235,57 @@
         }
     }
 
+
     /**
-     *
-     * @param {Object} d
+     * Return the number of commits of a given element of the tree
+     * @param {Object} cell
      *
      * @returns {Number}
      */
-    function getCommits(d) {
-        return d.commits;
+    function getCommits(cell) {
+        return cell.commits;
     }
+
 
     /**
      * Handle the transition to a given element of the root tree
      *
-     * @param {Object} d
+     * @param {Object} cell
      */
-    function zoom(d) {
-        var kx = width / d.dx;
-        var ky = height / d.dy;
+    function zoom(cell) {
+        var kx = width / cell.dx;
+        var ky = height / cell.dy;
 
-        x.domain([d.x, d.x + d.dx]);
-        y.domain([d.y, d.y + d.dy]);
+        x.domain([cell.x, cell.x + cell.dx]);
+        y.domain([cell.y, cell.y + cell.dy]);
 
         var transition = svg.selectAll("g.cell").transition()
             .duration(750)
             .attr("transform", function(d) {
-                return "translate(" + x(d.x) + "," + y(d.y) + ")";
+                return "translate(" + x(cell.x) + "," + y(cell.y) + ")";
             });
 
         transition.select("rect")
             .attr("width", function(d) {
-                return Math.max(0.01, kx * d.dx);
+                return Math.max(0.01, kx * cell.dx);
             })
             .attr("height", function(d) {
-                return Math.max(0.01, ky * d.dy);
+                return Math.max(0.01, ky * cell.dy);
             })
             .style("fill", function(d) {
-                return ramp((d.days * 100) / olderUnchangedDays);
+                return colorRange((cell.days * 100) / olderUnchangedDays);
             });
 
         transition.select("text")
             .attr("x", function(d) {
-                return kx * d.dx / 2;
+                return kx * cell.dx / 2;
             })
             .attr("y", function(d) {
-                return ky * d.dy / 2;
+                return ky * cell.dy / 2;
             })
             .style("display", function(d) {
-                d.w = this.getComputedTextLength();
-                return d.dx > d.w ? 'block' : 'none';
+                cell.w = this.getComputedTextLength();
+                return cell.dx > cell.w ? 'block' : 'none';
             });
 
         if (d3.event) {
@@ -293,6 +368,15 @@
         return childInfo;
     }
 
+
+    /**
+     * Return an element, from a filePath & a level
+     *
+     * @param cursor
+     * @param level
+     * @param filePath
+     * @returns {*}
+     */
     function getElementFromPath(cursor, level, filePath) {
         var filePaths = filePath.split('/'),
             path = filePaths[level];
@@ -315,8 +399,9 @@
         return null;
     }
 
+
     /**
-     * Updates the map to a desired level
+     * Updates the chart to a desired depth level
      *
      * @param {Number} desiredLevel
      */
@@ -332,8 +417,9 @@
         d3.select("select")[0][0].value = desiredLevel;
     }
 
+
     /**
-     * Updates the char with the given element
+     * Updates the chart with the given element as root
      *
      * @param {Object} element
      */
@@ -345,105 +431,56 @@
         zoom(element);
     }
 
-    // Bind to StateChange Event
-    History.Adapter.bind(window,'statechange', function(){
-        var state = History.getState(),
-            stateData = state.data;
-
-        prevStep = currentStep;
-        currentStep = state;
-
-        // Returns to the first loaded page (with a hash)
-        if (JSON.stringify(stateData) === '{}') {
-            return changeLevel(firstLevel);
-        }
-
-        // Returns to the an empty URL hash (the first page without hash)
-        if (typeof(stateData.add) !== undefined && stateData.add === false) {
-            return changeLevel(totalLevels);
-        }
-
-        if (typeof(stateData.element) !== 'undefined') {
-            var parent = getElementFromPath(root, 0, stateData.element);
-
-            if (parent) {
-                return changeParent(parent);
-            }
-        }
-
-        if (typeof(stateData.level) !== 'undefined') {
-            return changeLevel(+stateData.level);
-        }
-    });
 
     /**
-     *
-     * Retrieve data
-     *
+     * Bind to StateChange Event
      */
+    function startStateChangeListener() {
+        History.Adapter.bind(window,'statechange', function(){
+            var state = History.getState(),
+                stateData = state.data;
 
-    d3.csv('/datas.csv', function(error, datas) {
+            prevStep = currentStep;
+            currentStep = state;
 
-        var formattedDatas = {
-            name: '/',
-            children: []
-        },
-        historyState = History.getState();
-
-        // Create tree from csv data
-        datas.forEach(function(file) {
-            createPath(formattedDatas, 0, file);
-
-            var nbOfUnchangedDays = moment().diff(moment(file.date), 'days');
-            if (nbOfUnchangedDays > olderUnchangedDays) {
-                olderUnchangedDays = nbOfUnchangedDays;
-            }
-        });
-
-        // Init tree map
-        root = formattedDatas;
-        var nodes = treemap.nodes(root).filter(function(d) {
-            return d.level < totalLevels;
-        });
-        initTreeMap(nodes, true);
-
-        // Build level select list
-        for (var i = 1; i <= totalLevels; i++) {
-            d3.select('form select')
-                .append("option")
-                .attr("value", i)
-                .text(i);
-        }
-
-        d3.select('form option[value="' + totalLevels + '"]').attr("selected", "selected");
-        currentLevel = totalLevels;
-        firstLevel = totalLevels;
-
-        if (typeof(historyState.hash) !== 'undefined') {
-            // Check if the level or the parent is in the URL
-            var levelRegexp = new RegExp("level=([0-9]+)"),
-                levelInfos = levelRegexp.exec(historyState.hash),
-                parentRegexp = new RegExp("parent=([aA-zZ/]+)"),
-                parentInfos = parentRegexp.exec(historyState.hash);
-
-            if (levelInfos && levelInfos.length && levelInfos[1] > 0) {
-                firstLevel = +levelInfos[1];
-                changeLevel(firstLevel);
+            // Returns to the first loaded page (with a hash)
+            if (JSON.stringify(stateData) === '{}') {
+                return changeLevel(firstLevel);
             }
 
-            if (parentInfos && parentInfos.length) {
-                var parent = getElementFromPath(formattedDatas, 0, parentInfos[1]);
+            // Returns to the an empty URL hash (the first page without hash)
+            if (typeof(stateData.add) !== undefined && stateData.add === false) {
+                return changeLevel(totalLevels);
+            }
+
+            if (typeof(stateData.element) !== 'undefined') {
+                var parent = getElementFromPath(root, 0, stateData.element);
+
                 if (parent) {
-                    changeParent(parent);
+                    return changeParent(parent);
                 }
             }
-        }
 
-        // Listener on level select list
-        d3.select("select").on("change", function() {
-            var desiredLevel = +this.value;
-            History.pushState({level: desiredLevel}, "Set level" + desiredLevel, "?level=" + desiredLevel);
-            changeLevel(desiredLevel);
+            if (typeof(stateData.level) !== 'undefined') {
+                return changeLevel(+stateData.level);
+            }
         });
-    })
-})(window);
+    }
+
+
+
+    chart.width = function(value) {
+        if (!arguments.length) return width;
+        width = value;
+        return chart;
+    };
+
+    chart.height = function(value) {
+        if (!arguments.length) return height;
+        height = value;
+        return chart;
+    };
+
+
+    return chart;
+}
