@@ -26,7 +26,7 @@ Therefore:
 * run the `run.sh` script with the path of the project you want to analyze as argument.
 
 ```sh
-./run.sh /path/to/project
+./run.sh /path/to/project/to/analyze
 ```
 
 * install server dependencies using Bower
@@ -38,7 +38,7 @@ bower install
 * run a simple local server on the root, for instance with SimpleHttpServer:
 
 ```sh
-python -m SimpleHTTPServer .
+python -m SimpleHTTPServer
 ```
 
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
