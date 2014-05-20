@@ -1,7 +1,6 @@
 #!/bin/bash
 
-CSVFILE=`pwd`
-CSVFILE+='/datas.csv'
+CSVFILE=`pwd`/datas.csv
 
 echo 'date,commits,filePath' > $CSVFILE
 
@@ -14,13 +13,13 @@ tree=`git ls-tree -r --name-only HEAD`
 nbFiles=`echo "$tree" | wc -l`
 echo "Number of files: $nbFiles"
 
-
-echo "$tree" | while ((i++)); read filename; do
-	echo "$(git log -1 --format="%ad" -- $filename),$(git log --oneline $filename | wc -l | tr -d ' '),$filename" >> $CSVFILE
-	percent=$(($i*100/$nbFiles))
-	echo -en "\r"
-	seq  -f "=" -s '' $percent
-	echo -en ">$percent%"
+i=0
+for filename in `echo $tree` ; do
+    i=$(($i + 1))
+    log=$(git log --format="%ad" -- $filename)
+    echo "$(echo "$log" | head -n 1),$(echo "$log" | wc -l),$filename" >> $CSVFILE
+    percent=$(($i*100/$nbFiles))
+    echo -en "\r>$percent%"
 done
 
-echo -en "\n"
+echo
