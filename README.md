@@ -23,16 +23,16 @@ Therefore:
     cd ArcheoloGit
 ```
 
-* run the `run.sh` script with the path of the project you want to analyze as argument.
-
-```sh
-./run.sh /path/to/project/to/analyze
-```
-
 * install server dependencies using Bower
 
 ```sh
 bower install
+```
+
+* run the `run.sh` script with the path of the project you want to analyze as argument.
+
+```sh
+./run.sh /path/to/project/to/analyze
 ```
 
 * run a simple local server on the root, for instance with SimpleHttpServer:
