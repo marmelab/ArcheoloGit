@@ -14,6 +14,8 @@ Therefore:
 3. Small green rectangles show files seldom modified, but created or modified recently. They won't need refactoring for now.
 4. Large green rectangles show files modified a lot of times, including recently. They probably don't deserve maintenance attention.
 
+To learn more about ArcheoloGit, check out [why we build ArcheoloGit](http://marmelab.com/blog/2014/05/15/archeologit.html).
+
 # Installation
 
 * clone the project
