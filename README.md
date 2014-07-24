@@ -40,7 +40,10 @@ bower install
 * run a simple local server on the root, for instance with SimpleHttpServer:
 
 ```sh
+# Python 2.7
 python -m SimpleHTTPServer
+# Python 3
+python -m http.server
 ```
 
 * browse to the index, for instance [http://0.0.0.0:8000/](http://0.0.0.0:8000/) if you use SimpleHttpServer
