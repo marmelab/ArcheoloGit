@@ -1,6 +1,17 @@
 ArcheoloGit
 ===========
 
+
+<table>
+        <tr>
+            <td><img width="60" src="https://cdnjs.cloudflare.com/ajax/libs/octicons/8.5.0/svg/book.svg" alt="publication" /></td>
+            <td><strong>Archived Repository</strong><br />
+            The code of this repository was written to illustrate the blog post <a href="https://marmelab.com/blog/2014/05/15/archeologit.html">Blog post title</a><br />
+        <strong>This code is not intended to be used in production, and is not maintained.</strong>
+        </td>
+        </tr>
+</table>
+
 Where should you focus the maintenance efforts? ArcheoloGit is a visualization of age and dev activity for software, powered by d3.js.
 
 ![angular.js ArcheoloGit](http://marmelab.com/ArcheoloGit/angularjs.png)
